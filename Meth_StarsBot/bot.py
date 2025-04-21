@@ -103,8 +103,7 @@ def lootbox(client, message: Message):
     user["xp"] += 2
     user["last_loot"] = now.isoformat()
     save()
-    message.reply(f"🎁 Lootbox drop: {reward} of Meth!
-+{prices[reward]} ⭐️ | +2 XP")
+    message.reply(f"🎁 Lootbox drop: {reward} of Meth!\n+{prices[reward]} ⭐️ | +2 XP")
 
 @app.on_message(filters.command("dice"))
 def dice(client, message: Message):
@@ -138,12 +137,10 @@ def slots(client, message: Message):
     if win:
         winnings = amt * 3
         data["users"][uid]["stars"] += winnings
-        result = f"{''.join(spin)}
-🎉 You won {winnings} ⭐️!"
+        result = f"{''.join(spin)}\n🎉 You won {winnings} ⭐️!"
     else:
         data["users"][uid]["stars"] -= amt
-        result = f"{''.join(spin)}
-You lost {amt} ⭐️"
+        result = f"{''.join(spin)}\nYou lost {amt} ⭐️"
     save()
     message.reply(result)
 
@@ -175,8 +172,7 @@ def top(client, message: Message):
     lines = ["🏆 Top 5 Buyers:"]
     for i, (uid, u) in enumerate(leaderboard, 1):
         lines.append(f"{i}. User {uid[-4:]} – {u.get('total_spent', 0)} ⭐️")
-    message.reply("
-".join(lines))
+    message.reply("\n".join(lines))
 
 @app.on_message(filters.command("mute"))
 def mute(client, message: Message):
@@ -207,10 +203,12 @@ def fake_activity():
             if not d.get("muted"):
                 try:
                     app.send_message(int(u), action)
-                except: continue
+                except:
+                    continue
     Timer(random.randint(15, 30), fake_activity).start()
 
 fake_activity()
 
 if __name__ == "__main__":
     app.run()
+
