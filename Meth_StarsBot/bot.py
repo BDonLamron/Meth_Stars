@@ -49,7 +49,7 @@ def balance(client, message: Message):
     stars = data["users"].get(uid, {}).get("stars", 0)
     message.reply(f"💰 Your balance: {stars} ⭐️ Stars")
 
-@app.on_message(filters.command("addstars") & filters.user([YOUR_TELEGRAM_ID]))
+@app.on_message(filters.command("addstars") & filters.user([5930965838]))
 def addstars(client, message: Message):
     try:
         uid, amt = message.text.split()[1:]
