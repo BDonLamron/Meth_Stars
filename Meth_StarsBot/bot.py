@@ -414,5 +414,5 @@ def handle_withdraw_step(client, message: Message):
         })
         save()
         del withdraw_sessions[uid]
-        return message.reply(f"✅ Your order for {item} has been scheduled for delivery to:
-📦 `{address}`")
+        return message.reply(f"✅ Your order for {item} has been scheduled for delivery to: {address}")
+
