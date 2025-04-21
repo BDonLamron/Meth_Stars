@@ -315,23 +315,33 @@ def unmute(client, message: Message):
 
 def fake_activity():
     now = datetime.now(timezone.utc)
-    active = [uid for uid, u in data["users"].items() if u.get("last_active") and datetime.fromisoformat(u["last_active"]) > now - timedelta(minutes=3)]
+
+    # Only keep users active in the last 3 mins
+    active = [
+        uid for uid, u in data["users"].items()
+        if u.get("last_active") and datetime.fromisoformat(u["last_active"]) > now - timedelta(minutes=3)
+    ]
+
     if active:
         victim = random.choice(active)
         action = random.choice([
-            f"🎲 @{victim} won 1000 ⭐️ in /dice!",
-            f"📦 @{victim} bought 0.5g of Meth!",
-            f"💰 @{victim} deposited 3000 ⭐️",
-            f"🎁 @{victim} opened a lootbox for 1g!"
+            f"🎲 User {victim[-4:]} won 1000 ⭐️ in /dice!",
+            f"📦 User {victim[-4:]} bought 0.5g of Meth!",
+            f"💰 User {victim[-4:]} deposited 3000 ⭐️",
+            f"🎁 User {victim[-4:]} opened a lootbox for 1g!"
         ])
-        for u, d in data["users"].items():
-            if not d.get("muted"):
+
+        for uid, user_data in data["users"].items():
+            if not user_data.get("muted"):
                 try:
-                    app.send_message(int(u), action)
-                except:
-                    continue
+                    app.send_message(int(uid), action)
+                except Exception as e:
+                    print(f"Failed to message {uid}: {e}")
+
+    # Re-run the function after delay
     Timer(random.randint(15, 30), fake_activity).start()
 
+# Kick off the fake event loop
 fake_activity()
 
 if __name__ == "__main__":
