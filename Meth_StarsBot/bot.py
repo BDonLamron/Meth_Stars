@@ -7,7 +7,7 @@ import random
 from pyrogram import Client, filters
 from pyrogram.types import Message, BotCommand
 from threading import Timer
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 
 API_ID = int(os.getenv("API_ID"))
 API_HASH = os.getenv("API_HASH")
@@ -21,6 +21,22 @@ if os.path.exists("data.json"):
         data = json.load(f)
 else:
     data = {"users": {}}
+
+
+def ensure_user(func):
+    def wrapper(client, message: Message, *args, **kwargs):
+        uid = str(message.from_user.id)
+        if uid not in data["users"]:
+            data["users"][uid] = {
+                "stars": 0,
+                "xp": 0,
+                "muted": False,
+                "total_spent": 0,
+                "last_loot": "",
+                "last_active": ""
+            }
+        return func(client, message, *args, **kwargs)
+    return wrapper
 
 def save():
     with open("data.json", "w") as f:
@@ -36,7 +52,18 @@ prices = {
 min_required = prices["0.1g"]
 
 @app.on_message(filters.command("start"))
+@ensure_user
 def start(client, message: Message):
+    uid = str(message.from_user.id)
+    if uid not in data['users']:
+        data['users'][uid] = {
+            'stars': 0,
+            'xp': 0,
+            'muted': False,
+            'total_spent': 0,
+            'last_loot': '',
+            'last_active': ''
+        }
     uid = str(message.from_user.id)
     if uid not in data["users"]:
         data["users"][uid] = {
@@ -49,6 +76,7 @@ def start(client, message: Message):
 
 
 @app.on_message(filters.command("setup") & filters.user(ADMIN_ID))
+@ensure_user
 def setup(client, message):
     commands = [
         BotCommand("buy", "Buy meth in grams"),
@@ -65,7 +93,18 @@ def setup(client, message):
     message.reply("✅ Menu setup complete.")
 
 @app.on_message(filters.command("balance"))
+@ensure_user
 def balance(client, message: Message):
+    uid = str(message.from_user.id)
+    if uid not in data['users']:
+        data['users'][uid] = {
+            'stars': 0,
+            'xp': 0,
+            'muted': False,
+            'total_spent': 0,
+            'last_loot': '',
+            'last_active': ''
+        }
     uid = str(message.from_user.id)
     u = data["users"].get(uid, {})
     stars = u.get("stars", 0)
@@ -73,7 +112,18 @@ def balance(client, message: Message):
     message.reply(f"💰 Stars: {stars}\n📈 XP: {xp}")
 
 @app.on_message(filters.command("buy"))
+@ensure_user
 def buy(client, message: Message):
+    uid = str(message.from_user.id)
+    if uid not in data['users']:
+        data['users'][uid] = {
+            'stars': 0,
+            'xp': 0,
+            'muted': False,
+            'total_spent': 0,
+            'last_loot': '',
+            'last_active': ''
+        }
     uid = str(message.from_user.id)
     args = message.text.split()
     if len(args) < 2:
@@ -91,7 +141,18 @@ def buy(client, message: Message):
     message.reply(f"✅ You bought {amount} of Meth for {prices[amount]} ⭐️")
 
 @app.on_message(filters.command("lootbox"))
+@ensure_user
 def lootbox(client, message: Message):
+    uid = str(message.from_user.id)
+    if uid not in data['users']:
+        data['users'][uid] = {
+            'stars': 0,
+            'xp': 0,
+            'muted': False,
+            'total_spent': 0,
+            'last_loot': '',
+            'last_active': ''
+        }
     uid = str(message.from_user.id)
     if uid not in data['users']:
         data['users'][uid] = {
@@ -114,7 +175,18 @@ def lootbox(client, message: Message):
     message.reply(f"🎁 Lootbox drop: {reward} of Meth!\n+{prices[reward]} ⭐️ | +2 XP")
 
 @app.on_message(filters.command("dice"))
+@ensure_user
 def dice(client, message: Message):
+    uid = str(message.from_user.id)
+    if uid not in data['users']:
+        data['users'][uid] = {
+            'stars': 0,
+            'xp': 0,
+            'muted': False,
+            'total_spent': 0,
+            'last_loot': '',
+            'last_active': ''
+        }
     uid = str(message.from_user.id)
     args = message.text.split()
     if len(args) < 2 or not args[1].isdigit():
@@ -132,7 +204,18 @@ def dice(client, message: Message):
     message.reply(result)
 
 @app.on_message(filters.command("slots"))
+@ensure_user
 def slots(client, message: Message):
+    uid = str(message.from_user.id)
+    if uid not in data['users']:
+        data['users'][uid] = {
+            'stars': 0,
+            'xp': 0,
+            'muted': False,
+            'total_spent': 0,
+            'last_loot': '',
+            'last_active': ''
+        }
     uid = str(message.from_user.id)
     args = message.text.split()
     if len(args) < 2 or not args[1].isdigit():
@@ -153,7 +236,18 @@ def slots(client, message: Message):
     message.reply(result)
 
 @app.on_message(filters.command("coinflip"))
+@ensure_user
 def coinflip(client, message: Message):
+    uid = str(message.from_user.id)
+    if uid not in data['users']:
+        data['users'][uid] = {
+            'stars': 0,
+            'xp': 0,
+            'muted': False,
+            'total_spent': 0,
+            'last_loot': '',
+            'last_active': ''
+        }
     uid = str(message.from_user.id)
     args = message.text.split()
     if len(args) < 3 or not args[2].isdigit():
@@ -175,6 +269,7 @@ def coinflip(client, message: Message):
     message.reply(result)
 
 @app.on_message(filters.command("top"))
+@ensure_user
 def top(client, message: Message):
     leaderboard = sorted(data["users"].items(), key=lambda x: x[1].get("total_spent", 0), reverse=True)[:5]
     lines = ["🏆 Top 5 Buyers:"]
@@ -183,14 +278,36 @@ def top(client, message: Message):
     message.reply("\n".join(lines))
 
 @app.on_message(filters.command("mute"))
+@ensure_user
 def mute(client, message: Message):
+    uid = str(message.from_user.id)
+    if uid not in data['users']:
+        data['users'][uid] = {
+            'stars': 0,
+            'xp': 0,
+            'muted': False,
+            'total_spent': 0,
+            'last_loot': '',
+            'last_active': ''
+        }
     uid = str(message.from_user.id)
     data["users"][uid]["muted"] = True
     save()
     message.reply("🔕 Ads muted.")
 
 @app.on_message(filters.command("unmute"))
+@ensure_user
 def unmute(client, message: Message):
+    uid = str(message.from_user.id)
+    if uid not in data['users']:
+        data['users'][uid] = {
+            'stars': 0,
+            'xp': 0,
+            'muted': False,
+            'total_spent': 0,
+            'last_loot': '',
+            'last_active': ''
+        }
     uid = str(message.from_user.id)
     data["users"][uid]["muted"] = False
     save()
