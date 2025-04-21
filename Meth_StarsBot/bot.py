@@ -46,7 +46,7 @@ def start(client, message: Message):
     data["users"][uid]["last_active"] = datetime.utcnow().isoformat()
     save()
     message.reply("💎 Welcome to MethStars!")
-Use /buy 0.1g to begin.
+Use /buy 0.1g to begin.")
 Use /lootbox for free gifts.")
 
 @app.on_message(filters.command("setup") & filters.user(ADMIN_ID))
