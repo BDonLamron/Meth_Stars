@@ -71,8 +71,7 @@ def balance(client, message: Message):
     u = data["users"].get(uid, {})
     stars = u.get("stars", 0)
     xp = u.get("xp", 0)
-    message.reply(f"💰 Stars: {stars}
-📈 XP: {xp}")
+    message.reply(f"💰 Stars: {stars}\n📈 XP: {xp}")
 
 @app.on_message(filters.command("buy"))
 def buy(client, message: Message):
