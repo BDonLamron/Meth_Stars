@@ -7,7 +7,7 @@ import random
 from pyrogram import Client, filters
 from pyrogram.types import Message, BotCommand
 from threading import Timer
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 API_ID = int(os.getenv("API_ID"))
 API_HASH = os.getenv("API_HASH")
