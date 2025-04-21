@@ -43,7 +43,7 @@ def start(client, message: Message):
             "stars": 0, "xp": 0, "muted": False,
             "total_spent": 0, "last_loot": "", "last_active": ""
         }
-    data["users"][uid]["last_active"] = datetime.utcnow().isoformat()
+    data["users"][uid]["last_active"] = datetime.now(timezone.utc).isoformat()
     save()
     message.reply("💎 Welcome to MethStars!\nUse /buy 0.1g to begin.\nUse /lootbox for free gifts.")
 
@@ -86,15 +86,24 @@ def buy(client, message: Message):
     data["users"][uid]["stars"] -= prices[amount]
     data["users"][uid]["total_spent"] += prices[amount]
     data["users"][uid]["xp"] += 1
-    data["users"][uid]["last_active"] = datetime.utcnow().isoformat()
+    data["users"][uid]["last_active"] = datetime.now(timezone.utc).isoformat()
     save()
     message.reply(f"✅ You bought {amount} of Meth for {prices[amount]} ⭐️")
 
 @app.on_message(filters.command("lootbox"))
 def lootbox(client, message: Message):
     uid = str(message.from_user.id)
-    user = data["users"][uid]
-    now = datetime.utcnow()
+    if uid not in data['users']:
+        data['users'][uid] = {
+            'stars': 0,
+            'xp': 0,
+            'muted': False,
+            'total_spent': 0,
+            'last_loot': '',
+            'last_active': ''
+        }
+    user = data['users'][uid]
+    now = datetime.now(timezone.utc)
     if user.get("last_loot") and datetime.fromisoformat(user["last_loot"]) > now - timedelta(hours=12):
         return message.reply("🎁 You already claimed your lootbox. Wait 12h.")
     reward = random.choice(["0.1g", "0.5g", "1g"])
@@ -188,7 +197,7 @@ def unmute(client, message: Message):
     message.reply("🔔 Ads unmuted.")
 
 def fake_activity():
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     active = [uid for uid, u in data["users"].items() if u.get("last_active") and datetime.fromisoformat(u["last_active"]) > now - timedelta(minutes=3)]
     if active:
         victim = random.choice(active)
@@ -210,4 +219,3 @@ fake_activity()
 
 if __name__ == "__main__":
     app.run()
-
