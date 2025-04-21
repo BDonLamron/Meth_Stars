@@ -1,12 +1,15 @@
 import os
 import json
 from pyrogram import Client, filters
-from pyrogram.types import Message
+from pyrogram.types import Message, BotCommand
 from threading import Timer
 
+# Load creds from environment
+API_ID = int(os.getenv("API_ID"))
+API_HASH = os.getenv("API_HASH")
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
-app = Client("methstars", bot_token=TOKEN)
+app = Client("methstars", api_id=API_ID, api_hash=API_HASH, bot_token=TOKEN)
 
 # Load balances
 if os.path.exists("data.json"):
@@ -27,15 +30,16 @@ prices = {
     "2g": 18238,
     "3.5g": 31920
 }
-
-# Minimum to unlock store
 min_required = prices["0.1g"]
+
+# Your Telegram user ID (admin only access)
+ADMIN_ID = 5930965838
 
 @app.on_message(filters.command("start"))
 def start(client, message: Message):
-    user_id = str(message.from_user.id)
-    if user_id not in data["users"]:
-        data["users"][user_id] = {"stars": 0, "referrals": 0, "muted": False}
+    uid = str(message.from_user.id)
+    if uid not in data["users"]:
+        data["users"][uid] = {"stars": 0, "referrals": 0, "muted": False}
         save()
     message.reply("💎 Welcome to MethStars!\nUse /buy 0.1g to cook.\nUse /deposit to learn how to load Stars.")
 
@@ -49,7 +53,7 @@ def balance(client, message: Message):
     stars = data["users"].get(uid, {}).get("stars", 0)
     message.reply(f"💰 Your balance: {stars} ⭐️ Stars")
 
-@app.on_message(filters.command("addstars") & filters.user([5930965838]))
+@app.on_message(filters.command("addstars") & filters.user(ADMIN_ID))
 def addstars(client, message: Message):
     try:
         uid, amt = message.text.split()[1:]
@@ -95,12 +99,23 @@ def unmute(client, message: Message):
     save()
     message.reply("🔔 Ads re-enabled. Let the hype flow.")
 
-# Background broadcast every 20 minutes
+@app.on_message(filters.command("setup") & filters.user(ADMIN_ID))
+def setup_commands(client, message):
+    commands = [
+        BotCommand("buy", "Buy meth in grams (ex: /buy 0.1g)"),
+        BotCommand("balance", "Check your Star balance"),
+        BotCommand("deposit", "How to load Stars"),
+        BotCommand("mute", "Mute ads"),
+        BotCommand("unmute", "Unmute ads")
+    ]
+    client.set_bot_commands(commands)
+    message.reply("✅ Command menu set.")
+
 def broadcast():
     for u, d in data["users"].items():
         if not d.get("muted"):
             try:
-                app.send_message(int(u), "📢 Someone just bought 1g of Meth! 🔥 Type /buy 0.1g to start.")
+                app.send_message(int(u), "📢 Someone just grabbed 1g of Meth! 🚚 /buy 0.1g to get in.")
             except: continue
     Timer(1200, broadcast).start()
 
