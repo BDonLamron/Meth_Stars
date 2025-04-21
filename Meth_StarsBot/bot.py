@@ -62,7 +62,8 @@ def start(client, message: Message):
             'muted': False,
             'total_spent': 0,
             'last_loot': '',
-            'last_active': ''
+            'last_active': '',
+            'inventory': {'0.1g': 0, '0.5g': 0, '1g': 0, '2g': 0, '3.5g': 0}
         }
     uid = str(message.from_user.id)
     if uid not in data["users"]:
@@ -103,7 +104,8 @@ def balance(client, message: Message):
             'muted': False,
             'total_spent': 0,
             'last_loot': '',
-            'last_active': ''
+            'last_active': '',
+            'inventory': {'0.1g': 0, '0.5g': 0, '1g': 0, '2g': 0, '3.5g': 0}
         }
     uid = str(message.from_user.id)
     u = data["users"].get(uid, {})
@@ -122,7 +124,8 @@ def buy(client, message: Message):
             'muted': False,
             'total_spent': 0,
             'last_loot': '',
-            'last_active': ''
+            'last_active': '',
+            'inventory': {'0.1g': 0, '0.5g': 0, '1g': 0, '2g': 0, '3.5g': 0}
         }
     uid = str(message.from_user.id)
     args = message.text.split()
@@ -136,6 +139,7 @@ def buy(client, message: Message):
     data["users"][uid]["stars"] -= prices[amount]
     data["users"][uid]["total_spent"] += prices[amount]
     data["users"][uid]["xp"] += 1
+    data["users"][uid]["inventory"][amount] += 1
     data["users"][uid]["last_active"] = datetime.now(timezone.utc).isoformat()
     save()
     message.reply(f"✅ You bought {amount} of Meth for {prices[amount]} ⭐️")
@@ -151,7 +155,8 @@ def lootbox(client, message: Message):
             'muted': False,
             'total_spent': 0,
             'last_loot': '',
-            'last_active': ''
+            'last_active': '',
+            'inventory': {'0.1g': 0, '0.5g': 0, '1g': 0, '2g': 0, '3.5g': 0}
         }
     uid = str(message.from_user.id)
     if uid not in data['users']:
@@ -161,7 +166,8 @@ def lootbox(client, message: Message):
             'muted': False,
             'total_spent': 0,
             'last_loot': '',
-            'last_active': ''
+            'last_active': '',
+            'inventory': {'0.1g': 0, '0.5g': 0, '1g': 0, '2g': 0, '3.5g': 0}
         }
     user = data['users'][uid]
     now = datetime.now(timezone.utc)
@@ -170,6 +176,7 @@ def lootbox(client, message: Message):
     reward = random.choice(["0.1g", "0.5g", "1g"])
     user["stars"] += prices[reward]
     user["xp"] += 2
+    user["inventory"][reward] += 1
     user["last_loot"] = now.isoformat()
     save()
     message.reply(f"🎁 Lootbox drop: {reward} of Meth!\n+{prices[reward]} ⭐️ | +2 XP")
@@ -185,7 +192,8 @@ def dice(client, message: Message):
             'muted': False,
             'total_spent': 0,
             'last_loot': '',
-            'last_active': ''
+            'last_active': '',
+            'inventory': {'0.1g': 0, '0.5g': 0, '1g': 0, '2g': 0, '3.5g': 0}
         }
     uid = str(message.from_user.id)
     args = message.text.split()
@@ -214,7 +222,8 @@ def slots(client, message: Message):
             'muted': False,
             'total_spent': 0,
             'last_loot': '',
-            'last_active': ''
+            'last_active': '',
+            'inventory': {'0.1g': 0, '0.5g': 0, '1g': 0, '2g': 0, '3.5g': 0}
         }
     uid = str(message.from_user.id)
     args = message.text.split()
@@ -246,7 +255,8 @@ def coinflip(client, message: Message):
             'muted': False,
             'total_spent': 0,
             'last_loot': '',
-            'last_active': ''
+            'last_active': '',
+            'inventory': {'0.1g': 0, '0.5g': 0, '1g': 0, '2g': 0, '3.5g': 0}
         }
     uid = str(message.from_user.id)
     args = message.text.split()
@@ -288,7 +298,8 @@ def mute(client, message: Message):
             'muted': False,
             'total_spent': 0,
             'last_loot': '',
-            'last_active': ''
+            'last_active': '',
+            'inventory': {'0.1g': 0, '0.5g': 0, '1g': 0, '2g': 0, '3.5g': 0}
         }
     uid = str(message.from_user.id)
     data["users"][uid]["muted"] = True
@@ -306,7 +317,8 @@ def unmute(client, message: Message):
             'muted': False,
             'total_spent': 0,
             'last_loot': '',
-            'last_active': ''
+            'last_active': '',
+            'inventory': {'0.1g': 0, '0.5g': 0, '1g': 0, '2g': 0, '3.5g': 0}
         }
     uid = str(message.from_user.id)
     data["users"][uid]["muted"] = False
@@ -346,3 +358,61 @@ fake_activity()
 
 if __name__ == "__main__":
     app.run()
+@app.on_message(filters.command("inventory"))
+@ensure_user
+def inventory(client, message: Message):
+    uid = str(message.from_user.id)
+    inv = data["users"][uid].get("inventory", {})
+    if not inv or all(v == 0 for v in inv.values()):
+        return message.reply("📦 Your meth stash is empty. Use /buy or /lootbox to collect.")
+    lines = ["📦 Your Inventory:"]
+    for k, v in inv.items():
+        if v > 0:
+            lines.append(f"{k} Meth: {v}x")
+    message.reply("\n".join(lines))
+
+# Withdraw state storage
+withdraw_sessions = {}
+
+@app.on_message(filters.command("withdraw"))
+@ensure_user
+def withdraw(client, message: Message):
+    uid = str(message.from_user.id)
+    user_inv = data["users"][uid]["inventory"]
+    available = [k for k, v in user_inv.items() if v > 0]
+    if not available:
+        return message.reply("📦 You have no meth to withdraw.")
+    withdraw_sessions[uid] = {"step": 1}
+    message.reply("🏷️ Which package do you want to withdraw? (e.g. 1g, 0.5g)")
+
+@app.on_message(filters.text & filters.private)
+@ensure_user
+def handle_withdraw_step(client, message: Message):
+    uid = str(message.from_user.id)
+    if uid not in withdraw_sessions:
+        return
+
+    step_data = withdraw_sessions[uid]
+
+    if step_data["step"] == 1:
+        item = message.text.strip()
+        if item not in data["users"][uid]["inventory"] or data["users"][uid]["inventory"][item] == 0:
+            return message.reply("❌ Invalid item or not enough in inventory.")
+        withdraw_sessions[uid]["item"] = item
+        withdraw_sessions[uid]["step"] = 2
+        return message.reply("📫 Enter your full delivery address:\n\n📦 Example:\nJohn Doe\n618 Sutton St\nDelacombe VIC 3356")
+
+    elif step_data["step"] == 2:
+        address = message.text.strip()
+        item = withdraw_sessions[uid]["item"]
+        data["users"][uid]["inventory"][item] -= 1
+        log = data["users"][uid].setdefault("shipping_log", [])
+        log.append({
+            "item": item,
+            "address": address,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        })
+        save()
+        del withdraw_sessions[uid]
+        return message.reply(f"✅ Your order for {item} has been scheduled for delivery to:
+📦 `{address}`")
