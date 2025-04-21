@@ -48,7 +48,7 @@ def start(client, message: Message):
     else:
         data["users"][uid]["last_active"] = datetime.utcnow().isoformat()
     save()
-    message.reply("💎 Welcome to MethStars!
+    message.reply("💎 Welcome to MethStars!")
 Use /buy 0.1g to begin.
 Use /lootbox for free gifts.")
 
