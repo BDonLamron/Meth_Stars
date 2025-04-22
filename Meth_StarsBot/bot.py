@@ -1,6 +1,7 @@
 # MethStars — Full Meth Casino Experience (Enhanced Fake Activity, UI Buttons)
 
 from pyrogram import Client, filters
+from pyrogram.enums import ChatAction
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 import os
 import json
@@ -9,13 +10,13 @@ import threading
 from datetime import datetime, timezone, timedelta
 
 API_ID = int(os.getenv("API_ID"))
-API_HASH = os.getenv("API_HASH"))
+API_HASH = os.getenv("API_HASH")
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 ADMIN_ID = 5930965838
 
 app = Client("methstars", api_id=API_ID, api_hash=API_HASH, bot_token=TOKEN)
 
-if os.path.exists("data.json")):
+if os.path.exists("data.json"):
     with open("data.json", "r") as f:
         data = json.load(f)
 else:
@@ -62,6 +63,7 @@ def show_menu(client, message: Message):
         [InlineKeyboardButton("📈 Feed", callback_data="feed"), InlineKeyboardButton("🎉 Confetti", callback_data="confetti")],
         [InlineKeyboardButton("🛍️ Shop", callback_data="shop")]
     ])
+    client.send_chat_action(message.chat.id, ChatAction.TYPING)
     client.send_message(message.chat.id, f"{animation}
 💊 **Welcome to MethStars** 💊
 Choose your vice:
