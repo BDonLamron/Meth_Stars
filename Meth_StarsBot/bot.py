@@ -87,6 +87,12 @@ def setup(client, message):
         BotCommand("top", "Leaderboard"),
         BotCommand("mute", "Mute bot ads"),
         BotCommand("unmute", "Unmute ads"),
+        BotCommand("withdraw", "Withdraw items from inventory"),
+        BotCommand("track", "Track your delivery"),
+        BotCommand("quests", "View your daily quests"),
+        BotCommand("streak", "Check your streak rewards"),
+        BotCommand("surprise", "Random bonus drop"),
+        BotCommand("profile", "Your profile dashboard")
     ]
     client.set_bot_commands(commands)
     message.reply("✅ Menu setup complete.")
