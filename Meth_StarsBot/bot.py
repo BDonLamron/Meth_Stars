@@ -496,14 +496,11 @@ def withdraw_item(client, message: Message):
     inventory[item] -= 1
     user["awaiting_address"] = item
     save()
-    return message.reply(
-        f"📦 `{item}` is being prepared for delivery.
-
-"
-        f"Please reply with your **full VIC address**, like:
-"
-        f"`John Doe\n618 Sutton St\nDelacombe VIC 3356`"
-    )
+     return message.reply(
+    f"📦 `{item}` is being prepared for delivery.\n\n"
+    "Please reply with your **full VIC address**, like:\n"
+    "`John Doe\\n618 Sutton St\\nDelacombe VIC 3356`"
+)
 
 @app.on_message(filters.text & filters.private)
 @ensure_user
