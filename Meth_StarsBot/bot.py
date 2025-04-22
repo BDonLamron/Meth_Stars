@@ -64,10 +64,7 @@ def show_menu(client, message: Message):
         [InlineKeyboardButton("🛍️ Shop", callback_data="shop")]
     ])
     client.send_chat_action(message.chat.id, ChatAction.TYPING)
-    client.send_message(message.chat.id, f"{animation}
-💊 *Welcome to MethStars* 💊
-Choose your vice below:
-{animation}", reply_markup=keyboard)
+    client.send_message(message.chat.id, f"{animation}\n💊 *Welcome to MethStars* 💊\nChoose your vice below:\n{animation}", reply_markup=keyboard), reply_markup=keyboard)
 
 @app.on_callback_query()
 def handle_buttons(client, cb: CallbackQuery):
@@ -173,12 +170,10 @@ def resolve_slots(client, message, amt):
     if win:
         reward = amt * 3
         u["stars"] += reward
-        result = f"{''.join(spin)}
-🎉 JACKPOT HIT!! You gained {reward} ⭐ 💸"
+        result = f"{''.join(spin)}\n🎉 JACKPOT!!! {reward} ⭐ raining on you! 💰✨"
     else:
         u["stars"] -= amt
-        result = f"{''.join(spin)}
-💀 You lost {amt} ⭐ — Trap house ain't easy, fam."
+        result = f"{''.join(spin)}\n💀 You lost {amt} ⭐ — Trap life hurts..."
     save()
     client.send_message(message.chat.id, result)
 
@@ -261,8 +256,7 @@ def view_inventory(client, message: Message):
     u = data["users"].get(uid, {"inventory": []})
     if not u["inventory"]:
         return message.reply("🎒 Inventory empty.")
-    items = "
-".join(u["inventory"][-5:])
+    items = '\n'.join(u["inventory"][-5:])
     message.reply(f"🎒 Recent Inventory:
 {items}")
 
