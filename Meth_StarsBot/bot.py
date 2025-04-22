@@ -270,6 +270,31 @@ def view_inventory(client, message: Message):
     message.reply(f"🎒 Recent Inventory:
 {items}")
 
+@app.on_message(filters.command("admin"))
+def admin_dashboard(client, message: Message):
+    if message.from_user.id != ADMIN_ID:
+        return message.reply("⛔ You do not have admin access.")
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton("📊 User Count", callback_data="admin_users"), InlineKeyboardButton("💰 Total Stars", callback_data="admin_total")],
+        [InlineKeyboardButton("🧹 Reset Lottery", callback_data="admin_reset_lottery")]
+    ])
+    message.reply("🛠️ Admin Panel:", reply_markup=keyboard)
+
+@app.on_callback_query(filters.regex("^admin_"))
+def handle_admin_buttons(client, cb: CallbackQuery):
+    if cb.from_user.id != ADMIN_ID:
+        return cb.answer("Unauthorized", show_alert=True)
+    cmd = cb.data.replace("admin_", "")
+    if cmd == "users":
+        cb.message.reply(f"👥 Total users: {len(data['users'])}")
+    elif cmd == "total":
+        total = sum(u.get("stars", 0) for u in data['users'].values())
+        cb.message.reply(f"💰 Total Stars in circulation: {total}")
+    elif cmd == "reset_lottery":
+        data["lottery"] = {"entries": [], "last_draw": datetime.now(timezone.utc).isoformat()}
+        save()
+        cb.message.reply("🔁 Lottery has been reset.")
+
 # Start enhanced loop
 loop_fake_feed()
 def run_lottery():
