@@ -1,606 +1,179 @@
-# MethStars Final Full bot.py (cleaned, all features, no syntax errors)
+# MethStars — Full Meth Casino Experience (Enhanced Fake Activity, UI Buttons)
 
+from pyrogram import Client, filters
+from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 import os
 import json
 import random
-from pyrogram import Client, filters
-from pyrogram.types import Message, BotCommand
-from threading import Timer
-from datetime import datetime, timedelta, timezone
+import threading
+from datetime import datetime, timezone, timedelta
 
 API_ID = int(os.getenv("API_ID"))
-API_HASH = os.getenv("API_HASH")
+API_HASH = os.getenv("API_HASH"))
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 ADMIN_ID = 5930965838
 
 app = Client("methstars", api_id=API_ID, api_hash=API_HASH, bot_token=TOKEN)
 
-if os.path.exists("data.json"):
+if os.path.exists("data.json")):
     with open("data.json", "r") as f:
         data = json.load(f)
 else:
-    data = {"users": {}}
-
-
-def ensure_user(func):
-    def wrapper(client, message: Message, *args, **kwargs):
-        uid = str(message.from_user.id)
-        if uid not in data["users"]:
-            data["users"][uid] = {
-                "stars": 0,
-                "xp": 0,
-                "muted": False,
-                "total_spent": 0,
-                "last_loot": "",
-                "last_active": ""
-            }
-        return func(client, message, *args, **kwargs)
-    return wrapper
+    data = {"users": {}, "orders": [], "feed": [], "lottery": {"entries": [], "last_draw": None}}
 
 def save():
     with open("data.json", "w") as f:
         json.dump(data, f)
 
-prices = {
-    "0.1g": 1695,
-    "0.5g": 4568,
-    "1g": 9119,
-    "2g": 18238,
-    "3.5g": 31920
-}
-min_required = prices["0.1g"]
+# Enhanced Fake AI Feed with Chat, Withdrawals, Viewers
+FAKE_USERNAMES = ["@Nter", "@ZootGod", "@MethDealer42", "@GhostCook", "@SkyBuzz"]
+FAKE_ACTIONS = [
+    lambda: f"🎲 {random.choice(FAKE_USERNAMES)} won {random.randint(200, 3000)} ⭐ on /dice!",
+    lambda: f"🎰 {random.choice(FAKE_USERNAMES)} hit a JACKPOT in /slots! +{random.randint(1000, 5000)} ⭐",
+    lambda: f"📦 {random.choice(FAKE_USERNAMES)} unboxed 🔥 {random.choice(['💊 0.5g', '👑 1g', '💰 Jackpot'])}",
+    lambda: f"🏆 {random.choice(FAKE_USERNAMES)} climbed the leaderboard to #1!",
+    lambda: f"🎁 {random.choice(FAKE_USERNAMES)} pulled a mystery prize worth 2000 ⭐",
+    lambda: f"📤 {random.choice(FAKE_USERNAMES)} just withdrew 2g Meth to Delacombe VIC 🚚",
+    lambda: f"💬 {random.choice(FAKE_USERNAMES)}: This is better than the casino fr 😵‍💫",
+    lambda: f"💬 {random.choice(FAKE_USERNAMES)}: just made 10K ⭐ ezpz 🧪",
+    lambda: f"👀 {random.randint(7, 19)} users online now..."
+]
 
-@app.on_message(filters.command("start"))
-@ensure_user
-def start(client, message: Message):
-    uid = str(message.from_user.id)
-    if uid not in data['users']:
-        data['users'][uid] = {
-            'stars': 0,
-            'xp': 0,
-            'muted': False,
-            'total_spent': 0,
-            'last_loot': '',
-            'last_active': ''
-        }
-    uid = str(message.from_user.id)
-    if uid not in data["users"]:
-        data["users"][uid] = {
-            "stars": 0, "xp": 0, "muted": False,
-            "total_spent": 0, "last_loot": "", "last_active": ""
-        }
-    data["users"][uid]["last_active"] = datetime.now(timezone.utc).isoformat()
-    save()
-    client.send_chat_action(message.chat.id, "typing")
-    message.reply("💎 Welcome to MethStars!\nUse /buy 0.1g to begin.\nUse /lootbox for free gifts.")
+def fake_feed(client):
+    action = random.choice(FAKE_ACTIONS)()
+    for uid in data["users"]:
+        if random.random() < 0.75:
+            try:
+                client.send_message(int(uid), action)
+            except: pass
 
+def loop_fake_feed():
+    fake_feed(app)
+    threading.Timer(random.randint(60, 180), loop_fake_feed).start()
 
-@app.on_message(filters.command("setup") & filters.user(ADMIN_ID))
-@ensure_user
-def setup(client, message):
-    commands = [
-        BotCommand("buy", "Buy meth in grams"),
-        BotCommand("balance", "View balance and XP"),
-        BotCommand("lootbox", "Claim free meth drop"),
-        BotCommand("dice", "Gamble your Stars"),
-        BotCommand("slots", "Slot machine"),
-        BotCommand("coinflip", "Heads or tails?"),
-        BotCommand("top", "Leaderboard"),
-        BotCommand("mute", "Mute bot ads"),
-        BotCommand("unmute", "Unmute ads"),
-        BotCommand("withdraw", "Withdraw items from inventory"),
-        BotCommand("track", "🚚 Track your delivery"),
-        BotCommand("quests", "View your daily quests"),
-        BotCommand("streak", "Check your streak rewards"),
-        BotCommand("surprise", "Random bonus drop"),
-        BotCommand("profile", "Your profile dashboard")
-    ]
-    client.set_bot_commands(commands)
-    client.send_chat_action(message.chat.id, "typing")
-    message.reply("✅ Menu setup complete.")
-
-@app.on_message(filters.command("balance"))
-@ensure_user
-def balance(client, message: Message):
-    uid = str(message.from_user.id)
-    if uid not in data['users']:
-        data['users'][uid] = {
-            'stars': 0,
-            'xp': 0,
-            'muted': False,
-            'total_spent': 0,
-            'last_loot': '',
-            'last_active': ''
-        }
-    uid = str(message.from_user.id)
-    u = data["users"].get(uid, {})
-    stars = u.get("stars", 0)
-    xp = u.get("xp", 0)
-    message.reply(f"💰 Stars: {stars}\n📈 XP: {xp}")
-
-@app.on_message(filters.command("buy"))
-@ensure_user
-def buy(client, message: Message):
-    uid = str(message.from_user.id)
-    if uid not in data['users']:
-        data['users'][uid] = {
-            'stars': 0,
-            'xp': 0,
-            'muted': False,
-            'total_spent': 0,
-            'last_loot': '',
-            'last_active': ''
-        }
-    uid = str(message.from_user.id)
-    args = message.text.split()
-    if len(args) < 2:
-        return message.reply("❌ ℹ️ Usage: /buy [amount]")
-    amount = args[1]
-    if amount not in prices:
-        return message.reply("❌ ❌ Invalid amount!.")
-    if data["users"][uid]["stars"] < prices[amount]:
-        return message.reply("💀 💀 Not enough ⭐️ Stars!.")
-    data["users"][uid]["stars"] -= prices[amount]
-    data["users"][uid]["total_spent"] += prices[amount]
-    data["users"][uid]["xp"] += 1
-    data["users"][uid]["last_active"] = datetime.now(timezone.utc).isoformat()
-    save()
-    message.reply(f"✅ 🧪 You bought {amount} of Meth for {prices[amount]} ⭐️")
-
-@app.on_message(filters.command("lootbox"))
-@ensure_user
-def lootbox(client, message: Message):
-    uid = str(message.from_user.id)
-    if uid not in data['users']:
-        data['users'][uid] = {
-            'stars': 0,
-            'xp': 0,
-            'muted': False,
-            'total_spent': 0,
-            'last_loot': '',
-            'last_active': ''
-        }
-    uid = str(message.from_user.id)
-    if uid not in data['users']:
-        data['users'][uid] = {
-            'stars': 0,
-            'xp': 0,
-            'muted': False,
-            'total_spent': 0,
-            'last_loot': '',
-            'last_active': ''
-        }
-    user = data['users'][uid]
-    now = datetime.now(timezone.utc)
-    if user.get("last_loot") and datetime.fromisoformat(user["last_loot"]) > now - timedelta(hours=12):
-        return message.reply("🎁 You already claimed your lootbox. Wait 12h.")
-    reward = random.choice(["0.1g", "0.5g", "1g"])
-    user["stars"] += prices[reward]
-    user["xp"] += 2
-    user["last_loot"] = now.isoformat()
-    save()
-    message.reply(f"🎁 Lootbox drop: {reward} of Meth!\n+{prices[reward]} ⭐️ | +2 XP")
-
-@app.on_message(filters.command("dice"))
-@ensure_user
-def dice(client, message: Message):
-    uid = str(message.from_user.id)
-    if uid not in data['users']:
-        data['users'][uid] = {
-            'stars': 0,
-            'xp': 0,
-            'muted': False,
-            'total_spent': 0,
-            'last_loot': '',
-            'last_active': ''
-        }
-    uid = str(message.from_user.id)
-    args = message.text.split()
-    if len(args) < 2 or not args[1].isdigit():
-        return message.reply("🎲 Usage: /dice [amount]")
-    amt = int(args[1])
-    if data["users"][uid]["stars"] < amt:
-        return message.reply("💀 💀 Not enough ⭐️ Stars!.")
-    if random.choice([True, False]):
-        data["users"][uid]["stars"] += amt
-        result = f"✅ 🎉 You won {amt} ⭐️!"
-    else:
-        data["users"][uid]["stars"] -= amt
-        result = f"❌ 😢 You lost {amt} ⭐️"
-    save()
-    message.reply(result)
-
-@app.on_message(filters.command("slots"))
-@ensure_user
-def slots(client, message: Message):
-    uid = str(message.from_user.id)
-    if uid not in data['users']:
-        data['users'][uid] = {
-            'stars': 0,
-            'xp': 0,
-            'muted': False,
-            'total_spent': 0,
-            'last_loot': '',
-            'last_active': ''
-        }
-    uid = str(message.from_user.id)
-    args = message.text.split()
-    if len(args) < 2 or not args[1].isdigit():
-        return message.reply("🎰 Usage: /slots [amount]")
-    amt = int(args[1])
-    if data["users"][uid]["stars"] < amt:
-        return message.reply("💀 💀 Not enough ⭐️ Stars!.")
-    spin = [random.choice(["💎", "🍒", "🍋"]) for _ in range(3)]
-    win = spin.count(spin[0]) == 3
-    if win:
-        winnings = amt * 3
-        data["users"][uid]["stars"] += winnings
-        result = f"{''.join(spin)}\n🎉 🎉 You won {winnings} ⭐️!"
-    else:
-        data["users"][uid]["stars"] -= amt
-        result = f"{''.join(spin)}\n😢 You lost {amt} ⭐️"
-    save()
-    message.reply(result)
-
-@app.on_message(filters.command("coinflip"))
-@ensure_user
-def coinflip(client, message: Message):
-    uid = str(message.from_user.id)
-    if uid not in data['users']:
-        data['users'][uid] = {
-            'stars': 0,
-            'xp': 0,
-            'muted': False,
-            'total_spent': 0,
-            'last_loot': '',
-            'last_active': ''
-        }
-    uid = str(message.from_user.id)
-    args = message.text.split()
-    if len(args) < 3 or not args[2].isdigit():
-        return message.reply("🪙 Usage: /coinflip heads|tails [amount]")
-    call = args[1].lower()
-    amt = int(args[2])
-    if call not in ["heads", "tails"]:
-        return message.reply("🪙 Choose heads or tails.")
-    if data["users"][uid]["stars"] < amt:
-        return message.reply("💀 💀 Not enough ⭐️ Stars!.")
-    flip = random.choice(["heads", "tails"])
-    if call == flip:
-        data["users"][uid]["stars"] += amt
-        result = f"✅ It was {flip}. 🎉 You won {amt} ⭐️!"
-    else:
-        data["users"][uid]["stars"] -= amt
-        result = f"❌ It was {flip}. 😢 You lost {amt} ⭐️"
-    save()
-    message.reply(result)
-
-@app.on_message(filters.command("top"))
-@ensure_user
-def top(client, message: Message):
-    leaderboard = sorted(data["users"].items(), key=lambda x: x[1].get("total_spent", 0), reverse=True)[:5]
-    lines = ["🏆 Top 5 Buyers:"]
-    for i, (uid, u) in enumerate(leaderboard, 1):
-        lines.append(f"{i}. User {uid[-4:]} – {u.get('total_spent', 0)} ⭐️")
-    message.reply("\n".join(lines))
-
-@app.on_message(filters.command("mute"))
-@ensure_user
-def mute(client, message: Message):
-    uid = str(message.from_user.id)
-    if uid not in data['users']:
-        data['users'][uid] = {
-            'stars': 0,
-            'xp': 0,
-            'muted': False,
-            'total_spent': 0,
-            'last_loot': '',
-            'last_active': ''
-        }
-    uid = str(message.from_user.id)
-    data["users"][uid]["muted"] = True
-    save()
-    message.reply("🔕 Ads muted.")
-
-@app.on_message(filters.command("unmute"))
-@ensure_user
-def unmute(client, message: Message):
-    uid = str(message.from_user.id)
-    if uid not in data['users']:
-        data['users'][uid] = {
-            'stars': 0,
-            'xp': 0,
-            'muted': False,
-            'total_spent': 0,
-            'last_loot': '',
-            'last_active': ''
-        }
-    uid = str(message.from_user.id)
-    data["users"][uid]["muted"] = False
-    save()
-    message.reply("🔔 Ads unmuted.")
-
-def fake_activity():
-    now = datetime.now(timezone.utc)
-
-    # Only keep users active in the last 3 mins
-    active = [
-        uid for uid, u in data["users"].items()
-        if u.get("last_active") and datetime.fromisoformat(u["last_active"]) > now - timedelta(minutes=3)
-    ]
-
-    if active:
-        victim = random.choice(active)
-        action = random.choice([
-            f"🎲 User {victim[-4:]} won 1000 ⭐️ in /dice!",
-            f"📦 User {victim[-4:]} bought 0.5g of Meth!",
-            f"💰 User {victim[-4:]} deposited 3000 ⭐️",
-            f"🎁 User {victim[-4:]} opened a lootbox for 1g!"
-        ])
-
-        for uid, user_data in data["users"].items():
-            if not user_data.get("muted"):
-                try:
-                    app.send_message(int(uid), action)
-                except Exception as e:
-                    print(f"Failed to message {uid}: {e}")
-
-    # Re-run the function after delay
-    Timer(random.randint(15, 30), fake_activity).start()
-
-# Kick off the fake event loop
-fake_activity()
-
-if __name__ == "__main__":
-    app.run()
-
-# TrapGPT Upgrades: Prestige, Shop, Badges, Rotating Deals, AI Dealer NPC, Quests, Titles, Quest Tracking, Quest XP, Title Effects, Quest Reset, Streak Badges, Title List, Streak Preview, Surprise Quests, Profile Page
-
-from pyrogram import Client, filters
-from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
-from datetime import datetime, timedelta
-import json, os, random
-
-# Assuming you have a `data` dict already loaded from data.json
-# and a save() function to persist it
-def save():
-    with open("data.json", "w") as f:
-        json.dump(data, f)
-
-# =====================
-# Quest Reset Tracking
-# =====================
-def reset_daily_quests(user):
-    today = str(datetime.utcnow().date())
-    if user.get("last_quest_reset") != today:
-        user["quest_progress"] = {"dice": 0, "lootbox": 0, "delivery": 0, "xp": 0}
-        user["last_quest_reset"] = today
-        user["streak"] = user.get("streak", 0)
-
-# =====================
-# /quests command (daily tasks + XP reward + streak badge)
-# =====================
-@app.on_message(filters.command("quests") )
-def quests(client, message: Message):
-    user_id = str(message.from_user.id)
-    user = data["users"].setdefault(user_id, {})
-    reset_daily_quests(user)
-    user.setdefault("quest_progress", {"dice": 0, "lootbox": 0, "delivery": 0, "xp": 0})
-
-    progress = user["quest_progress"]
-    lines = [
-        f"🎯 Win 1 /dice game — {'✅' if progress['dice'] >= 1 else f'{progress['dice']}/1'}",
-        f"🎁 Open 1 lootbox — {'✅' if progress['lootbox'] >= 1 else f'{progress['lootbox']}/1'}",
-        f"🚚 Make 1 delivery — {'✅' if progress['delivery'] >= 1 else f'{progress['delivery']}/1'}",
-        f"📈 Gain 50 XP — {'✅' if progress['xp'] >= 50 else f'{progress['xp']}/50'}",
-    ]
-
-    if all([
-        progress['dice'] >= 1,
-        progress['lootbox'] >= 1,
-        progress['delivery'] >= 1,
-        progress['xp'] >= 50
-    ]):
-        progress.update({"dice": 0, "lootbox": 0, "delivery": 0, "xp": 0})
-        user["xp"] = user.get("xp", 0) + 100
-        user["streak"] += 1
-        if user["streak"] in [3, 7, 14]:
-            user.setdefault("badges", []).append(f"🔥 {user['streak']}-Day Streak")
-        save()
-        return message.reply(f"✅ 🏁 Daily Quests Complete! +100 XP\n🔥 Streak: {user['streak']} days")
-
-    save()
-    return message.reply("📜 **Daily Quests**:\n\n" + "\n".join(lines))
-
-# =====================
-# /streak command (preview rewards)
-# =====================
-@app.on_message(filters.command("streak") )
-def streak_preview(client, message: Message):
-    rewards = ["3-Day: 🔥 Streak Badge", "7-Day: 🔥🔥 + XP Boost", "14-Day: 👑 Crown Title"]
-    return message.reply("📆 **Streak Rewards**:\n\n" + "\n".join(rewards))
-
-# =====================
-# /surprise command (random event or bonus quest)
-# =====================
-@app.on_message(filters.command("surprise") )
-def surprise_quest(client, message: Message):
-    user_id = str(message.from_user.id)
-    user = data["users"].setdefault(user_id, {})
-    bonus = random.choice([
-        "💥 Double XP for next /dice win!",
-        "🎲 Free lootbox granted!",
-        "💸 +250 Stars added to your stash!"
+# Main menu command
+@app.on_message(filters.command("menu"))
+def show_menu(client, message: Message):
+    animation = "✨✨✨" * 3
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton("🎲 Dice", callback_data="dice"), InlineKeyboardButton("🎰 Slots", callback_data="slots")],
+        [InlineKeyboardButton("🎁 Unbox", callback_data="unbox"), InlineKeyboardButton("🎟️ Lotto", callback_data="lotto")],
+        [InlineKeyboardButton("📊 Vault", callback_data="vault"), InlineKeyboardButton("🏆 Leaderboard", callback_data="top")],
+        [InlineKeyboardButton("📈 Feed", callback_data="feed"), InlineKeyboardButton("🎉 Confetti", callback_data="confetti")],
+        [InlineKeyboardButton("🛍️ Shop", callback_data="shop")]
     ])
-    if "Stars" in bonus:
-        user["stars"] = user.get("stars", 0) + 250
-    elif "lootbox" in bonus:
-        user.setdefault("inventory", {})["lootbox"] = user["inventory"].get("lootbox", 0) + 1
-    save()
-    return message.reply(f"🎉 Surprise Event:\n{bonus}")
-
-# =====================
-# /profile command — summary of dashboard + titles + badges
-# =====================
-@app.on_message(filters.command("profile") )
-def show_profile(client, message: Message):
-    user_id = str(message.from_user.id)
-    user = data["users"].get(user_id, {})
-
-    stars = user.get("stars", 0)
-    xp = user.get("xp", 0)
-    streak = user.get("streak", 0)
-    title = user.get("title", "None")
-    badges = user.get("badges", [])
-
-    badge_list = ", ".join(badges[-5:]) or "None"
-
-    return message.reply(
-        f"🧾 **Your Profile**\n\n"
-        f"⭐ Stars: `{stars}`\n"
-        f"🌟 XP: `{xp}`\n"
-        f"🔥 Streak: `{streak}` days\n"
-        f"🎖️ Title: {title}\n"
-        f"🏅 Recent Badges: {badge_list}"
-    )
-
-# =====================
-# Title Effects Helper (can be used in game logic)
-# =====================
-def apply_title_effects(user):
-    title = user.get("title", "")
-    if "XP Boost" in title:
-        return {"xp_multiplier": 1.5}
-    elif "Streak" in title:
-        return {"xp_multiplier": 1.2}
-    elif "Crown" in title:
-        return {"xp_multiplier": 2.0}
-    return {"xp_multiplier": 1.0}
-
-
-# =====================
-# /withdraw command + cooldown + VIC address check
-# =====================
-@app.on_message(filters.command("withdraw")  & filters.regex(r"^/withdraw\s+(.+)"))
-@ensure_user
-def withdraw_item(client, message: Message):
-    uid = str(message.from_user.id)
-    item = message.matches[0].group(1).strip()
-    user = data["users"].setdefault(uid, {})
-    inventory = user.setdefault("inventory", {})
-
-    if inventory.get(item, 0) <= 0:
-        return message.reply("❌ 🚫 You don’t have that item in your inventory.")
-
-    now = datetime.now(timezone.utc)
-    last_withdraw = user.get("last_withdraw_time")
-    if last_withdraw:
-        last_dt = datetime.fromisoformat(last_withdraw)
-        if now < last_dt + timedelta(hours=1):
-            minutes = int(((last_dt + timedelta(hours=1)) - now).total_seconds() / 60)
-            return message.reply(f"🕒 You must wait {minutes} more minutes before withdrawing again.")
-
-    user["last_withdraw_time"] = now.isoformat()
-    inventory[item] -= 1
-    user["awaiting_address"] = item
-    save()
-    return message.reply(
-        f"📦 `{item}` is being prepared for delivery.\n\n"
-        "Please reply with your **full VIC address**, like:\n"
-        "`John Doe\\n618 Sutton St\\nDelacombe VIC 3356`"
-    )
-
-@app.on_message(filters.text )
-@ensure_user
-def handle_address(client, message: Message):
-    uid = str(message.from_user.id)
-    user = data["users"].get(uid, {})
-
-    if "awaiting_address" not in user:
-        return
-
-    lines = message.text.strip().split("\n")
-    if len(lines) < 3:
-        return message.reply("❌ Address must be at least 3 lines (name, street, suburb + VIC postcode).")
-
-    vic_line = lines[-1].strip()
-    if not vic_line.upper().startswith("VIC") or not any(char.isdigit() for char in vic_line):
-        return message.reply("❌ Last line must contain 'VIC ####' with a postcode.")
-
-    try:
-        postcode = int(vic_line.split()[-1])
-        if not (3000 <= postcode <= 3999):
-            raise ValueError
-    except ValueError:
-        return message.reply("❌ Invalid VIC postcode. Must be between 3000–3999.")
-
-    item = user.pop("awaiting_address", None)
-    save()
-
-    client.send_chat_action(message.chat.id, "typing")
-    Timer(2.5, lambda: message.reply("📦 Packaging your order...")).start()
-    Timer(5, lambda: message.reply("🚚 Sending to street dealer...")).start()
-    Timer(7.5, lambda: message.reply(f"✅ Your `{item}` was successfully delivered!")).start()
-
-# =====================
-# /track command
-# =====================
-@app.on_message(filters.command("track") )
-@ensure_user
-def track(client, message: Message):
-    stages = [
-        "📦 Order Confirmed",
-        "📤 Shipped from Warehouse",
-        "🚚 Out for Delivery",
-        "📬 Delivered"
-    ]
-    stage = random.choice(stages)
-    message.reply(f"🚨 Tracking Status: {stage}")
-
-
-
-def main_menu():
-    return InlineKeyboardMarkup([
-        [InlineKeyboardButton("🎁 Lootbox", callback_data="lootbox"),
-         InlineKeyboardButton("🛒 Buy Meth", callback_data="buy")],
-        [InlineKeyboardButton("🎲 Dice", callback_data="dice"),
-         InlineKeyboardButton("🎰 Slots", callback_data="slots")],
-        [InlineKeyboardButton("📦 Withdraw", callback_data="withdraw"),
-         InlineKeyboardButton("🚚 Track", callback_data="track")],
-        [InlineKeyboardButton("🧾 Profile", callback_data="profile"),
-         InlineKeyboardButton("📜 Quests", callback_data="quests")],
-        [InlineKeyboardButton("🎉 Surprise", callback_data="surprise"),
-         InlineKeyboardButton("📈 Balance", callback_data="balance")]
-    ])
-
+    client.send_message(message.chat.id, f"{animation}
+💊 **Welcome to MethStars** 💊
+Choose your vice:
+{animation}", reply_markup=keyboard)
 
 @app.on_callback_query()
-@ensure_user
-def handle_buttons(client, callback_query):
-    data = callback_query.data
-    message = callback_query.message
-    uid = str(callback_query.from_user.id)
+def handle_buttons(client, cb: CallbackQuery):
+    fancy_response = {
+        "dice": "🎲 Rolling those dice...",
+        "slots": "🎰 Spinning the reels...",
+        "unbox": "📦 Cracking open the mystery...",
+        "lotto": "🎟️ Entering the Trap Lotto...",
+        "vault": "📊 Checking your vault...",
+        "top": "🏆 Loading leaderboard...",
+        "feed": "📈 Activating AI hype feed...",
+        "confetti": "🎉 Dropping confetti bombs!",
+        "shop": "🛍️ Loading meth deals..."
+    }
+    cmd = cb.data
+    cb.answer(fancy_response.get(cb.data, "Loading..."))
+    client.send_message(cb.message.chat.id, f"/{cmd}")
 
-    client.send_chat_action(callback_query.message.chat.id, "typing")
+@app.on_message(filters.command("shop"))
+def show_shop(client, message: Message):
+    items = [
+        {"label": "🧪 0.1g Meth - 200 ⭐", "price": 200, "item": "🧪 0.1g Meth"},
+        {"label": "💊 0.5g Meth - 500 ⭐", "price": 500, "item": "💊 0.5g Meth"},
+        {"label": "👑 1g Meth - 1000 ⭐", "price": 1000, "item": "👑 1g Meth"}
+    ]
+    uid = str(message.from_user.id)
+    user = data["users"].setdefault(uid, {"stars": 1000, "inventory": []})
 
-    if data == "lootbox":
-        client.send_message(message.chat.id, "/lootbox")
-    elif data == "buy":
-        client.send_message(message.chat.id, "🛒 Use /buy 0.1g or 0.5g")
-    elif data == "dice":
-        client.send_message(message.chat.id, "🎲 Use /dice [amount] to gamble.")
-    elif data == "slots":
-        client.send_message(message.chat.id, "🎰 Use /slots [amount] to spin.")
-    elif data == "withdraw":
-        client.send_message(message.chat.id, "📦 Use /withdraw [item] to deliver meth.")
-    elif data == "track":
-        client.send_message(message.chat.id, "/track")
-    elif data == "profile":
-        client.send_message(message.chat.id, "/profile")
-    elif data == "quests":
-        client.send_message(message.chat.id, "/quests")
-    elif data == "surprise":
-        client.send_message(message.chat.id, "/surprise")
-    elif data == "balance":
-        client.send_message(message.chat.id, "/balance")
-    callback_query.answer()
+    buttons = []
+    for i in items:
+        buttons.append([InlineKeyboardButton(i["label"], callback_data=f"buy_{i['item']}")])
+
+    client.send_message(
+        message.chat.id,
+        "🛍️ **MethStars Store** — Spend your ⭐ on exclusive drops:",
+        reply_markup=InlineKeyboardMarkup(buttons)
+    )
+
+@app.on_callback_query(filters.regex("^buy_"))
+def buy_item(client, cb: CallbackQuery):
+    item_label = cb.data[4:]
+    uid = str(cb.from_user.id)
+    user = data["users"].setdefault(uid, {"stars": 1000, "inventory": []})
+    prices = {"🧪 0.1g Meth": 200, "💊 0.5g Meth": 500, "👑 1g Meth": 1000}
+
+    if item_label not in prices:
+        return cb.answer("❌ Item not found")
+    if user["stars"] < prices[item_label]:
+        return cb.answer("💀 Not enough Stars!", show_alert=True)
+
+    user["stars"] -= prices[item_label]
+    user["inventory"].append(item_label)
+    save()
+    cb.answer("✅ Purchased!")
+    client.send_message(cb.message.chat.id, f"📦 You bought: {item_label}")
+
+# Enhanced slot animation
+@app.on_message(filters.command("slots"))
+def slots_game(client, message: Message):
+    uid = str(message.from_user.id)
+    u = data["users"].setdefault(uid, {"stars": 1000})
+    try:
+        amt = int(message.text.split()[1])
+        if amt <= 0 or u["stars"] < amt:
+            return message.reply("❌ Not enough Stars!")
+        client.send_message(message.chat.id, "🎰 Spinning...")
+        threading.Timer(2.0, lambda: resolve_slots(client, message, amt)).start()
+    except:
+        message.reply("Usage: /slots [amount]")
+
+def resolve_slots(client, message, amt):
+    uid = str(message.from_user.id)
+    u = data["users"][uid]
+    spin = [random.choice(["🍒", "💎", "7️⃣"]) for _ in range(3)]
+    win = spin.count(spin[0]) == 3
+    if win:
+        reward = amt * 3
+        u["stars"] += reward
+        result = f"{''.join(spin)}
+🎉 JACKPOT! +{reward} ⭐"
+    else:
+        u["stars"] -= amt
+        result = f"{''.join(spin)}
+😢 You lost {amt} ⭐"
+    save()
+    client.send_message(message.chat.id, result)
+
+# Enhanced unbox animation
+@app.on_message(filters.command("unbox"))
+def enhanced_unbox(client, message: Message):
+    uid = str(message.from_user.id)
+    u = data["users"].setdefault(uid, {"stars": 1000, "inventory": [], "xp": 0})
+    if u["stars"] < 500:
+        return message.reply("💀 Not enough Stars! Mystery Box costs 500 ⭐")
+    u["stars"] -= 500
+    client.send_message(message.chat.id, "📦 Cracking open your box...")
+    threading.Timer(2.0, lambda: finish_unbox(client, message)).start()
+
+def finish_unbox(client, message):
+    uid = str(message.from_user.id)
+    u = data["users"][uid]
+    rewards = ["🧪 0.1g Meth", "💊 0.5g Meth", "👑 1g Meth", "⭐ 1000", "💰 Jackpot 5000 ⭐"]
+    prize = random.choice(rewards)
+    u["inventory"].append(prize)
+    u["xp"] += 50
+    save()
+    client.send_message(message.chat.id, f"🎁 BOOM! You won: {prize} 🎉")
+
+# Start enhanced loop
+loop_fake_feed()
+run_lottery()
