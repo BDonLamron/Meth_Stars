@@ -65,9 +65,10 @@ def show_menu(client, message: Message):
     ])
     client.send_chat_action(message.chat.id, ChatAction.TYPING)
     client.send_message(message.chat.id, f"{animation}
-💊 **Welcome to MethStars** 💊
+💊 *Welcome to MethStars* 💊
 Choose your vice below:
-{animation}"
+{animation}
+", reply_markup=keyboard))
 💊 **Welcome to MethStars** 💊
 Choose your vice below:
 {animation}", reply_markup=keyboard)
@@ -87,14 +88,34 @@ def handle_buttons(client, cb: CallbackQuery):
     }
     cmd = cb.data
     cb.answer(fancy_response.get(cb.data, "Loading..."))
-    client.send_message(cb.message.chat.id, f"/{cmd}")
+    if cmd == "dice":
+        client.send_message(cb.message.chat.id, "/dice 100")
+    elif cmd == "slots":
+        client.send_message(cb.message.chat.id, "/slots 100")
+    elif cmd == "unbox":
+        client.send_message(cb.message.chat.id, "/unbox")
+    elif cmd == "lotto":
+        client.send_message(cb.message.chat.id, "/lotto")
+    elif cmd == "vault":
+        client.send_message(cb.message.chat.id, "/vault")
+    elif cmd == "top":
+        client.send_message(cb.message.chat.id, "/top")
+    elif cmd == "feed":
+        client.send_message(cb.message.chat.id, "📈 Hype feed triggered!")
+    elif cmd == "confetti":
+        client.send_message(cb.message.chat.id, "🎉✨✨ Confetti everywhere!!")
+    elif cmd == "shop":
+        client.send_message(cb.message.chat.id, "/shop")
 
 @app.on_message(filters.command("shop"))
 def show_shop(client, message: Message):
     items = [
-        {"label": "🧪 0.1g Meth - 200 ⭐", "price": 200, "item": "🧪 0.1g Meth"},
-        {"label": "💊 0.5g Meth - 500 ⭐", "price": 500, "item": "💊 0.5g Meth"},
-        {"label": "👑 1g Meth - 1000 ⭐", "price": 1000, "item": "👑 1g Meth"}
+        {"label": "🧪 0.1g Blue Crystal - 200 ⭐", "price": 200, "item": "🧪 0.1g Blue Crystal"},
+        {"label": "💊 0.1g Red Rock - 210 ⭐", "price": 210, "item": "💊 0.1g Red Rock"},
+        {"label": "🧪 0.5g Flake - 470 ⭐", "price": 470, "item": "🧪 0.5g Flake"},
+        {"label": "💊 0.5g Ice Pure - 500 ⭐", "price": 500, "item": "💊 0.5g Ice Pure"},
+        {"label": "👑 1g Crystal Meth - 1000 ⭐", "price": 1000, "item": "👑 1g Crystal Meth"},
+        {"label": "👑 1g Rainbow Shard - 1050 ⭐", "price": 1050, "item": "👑 1g Rainbow Shard"}
     ]
     uid = str(message.from_user.id)
     user = data["users"].setdefault(uid, {"stars": 1000, "inventory": []})
@@ -114,7 +135,14 @@ def buy_item(client, cb: CallbackQuery):
     item_label = cb.data[4:]
     uid = str(cb.from_user.id)
     user = data["users"].setdefault(uid, {"stars": 1000, "inventory": []})
-    prices = {"🧪 0.1g Meth": 200, "💊 0.5g Meth": 500, "👑 1g Meth": 1000}
+    prices = {
+        "🧪 0.1g Blue Crystal": 200,
+        "💊 0.1g Red Rock": 210,
+        "🧪 0.5g Flake": 470,
+        "💊 0.5g Ice Pure": 500,
+        "👑 1g Crystal Meth": 1000,
+        "👑 1g Rainbow Shard": 1050
+    }
 
     if item_label not in prices:
         return cb.answer("❌ Item not found")
@@ -150,11 +178,11 @@ def resolve_slots(client, message, amt):
         reward = amt * 3
         u["stars"] += reward
         result = f"{''.join(spin)}
-🎉 JACKPOT HIT!! You gained {reward} ⭐🔥"
+🎉 JACKPOT HIT!! You gained {reward} ⭐ 💸"
     else:
         u["stars"] -= amt
         result = f"{''.join(spin)}
-💀 You lost {amt} ⭐ — Trap house ain't easy."
+💀 You lost {amt} ⭐ — Trap house ain't easy, fam."
     save()
     client.send_message(message.chat.id, result)
 
@@ -179,6 +207,82 @@ def finish_unbox(client, message):
     save()
     client.send_message(message.chat.id, f"🎁 BOOM! You won: {prize} 🎉")
 
+@app.on_message(filters.command("dice"))
+def dice_game(client, message: Message):
+    uid = str(message.from_user.id)
+    u = data["users"].setdefault(uid, {"stars": 1000})
+    try:
+        amt = int(message.text.split()[1])
+        if amt <= 0 or u["stars"] < amt:
+            return message.reply("❌ Not enough Stars!")
+        roll = random.choice([True, False])
+        if roll:
+            u["stars"] += amt
+            res = f"🎲 WIN! You gained {amt} ⭐"
+        else:
+            u["stars"] -= amt
+            res = f"💀 LOSS! You lost {amt} ⭐"
+        save()
+        message.reply(res)
+    except:
+        message.reply("Usage: /dice [amount]")
+
+@app.on_message(filters.command("vault"))
+def vault_view(client, message: Message):
+    uid = str(message.from_user.id)
+    u = data["users"].get(uid, {"stars": 0, "inventory": [], "xp": 0})
+    message.reply(f"📊 Vault:
+⭐ Stars: {u['stars']}
+🎒 Inventory Items: {len(u['inventory'])}
+📈 XP: {u.get('xp', 0)}")
+
+@app.on_message(filters.command("top"))
+def top_players(client, message: Message):
+    top = sorted(data["users"].items(), key=lambda x: x[1].get("stars", 0), reverse=True)[:5]
+    board = "🏆 Top Meth Users:
+"
+    for i, (uid, u) in enumerate(top):
+        board += f"{i+1}. User {uid[-4:]} — {u['stars']} ⭐
+"
+    message.reply(board)
+
+@app.on_message(filters.command("lotto"))
+def enter_lotto(client, message: Message):
+    uid = str(message.from_user.id)
+    u = data["users"].setdefault(uid, {"stars": 1000})
+    if u["stars"] < 100:
+        return message.reply("🎟️ You need 100 ⭐ to enter the lottery!")
+    if uid in data["lottery"]["entries"]:
+        return message.reply("⏳ Already entered this round.")
+    u["stars"] -= 100
+    data["lottery"]["entries"].append(uid)
+    save()
+    message.reply("✅ You're in the next draw! Prize: 3000 ⭐")
+
+@app.on_message(filters.command("inventory"))
+def view_inventory(client, message: Message):
+    uid = str(message.from_user.id)
+    u = data["users"].get(uid, {"inventory": []})
+    if not u["inventory"]:
+        return message.reply("🎒 Inventory empty.")
+    items = "
+".join(u["inventory"][-5:])
+    message.reply(f"🎒 Recent Inventory:
+{items}")
+
 # Start enhanced loop
 loop_fake_feed()
+def run_lottery():
+    now = datetime.now(timezone.utc)
+    if data["lottery"]["entries"]:
+        winner = random.choice(data["lottery"]["entries"])
+        data["users"][winner]["stars"] += 3000
+        for uid in data["users"]:
+            try:
+                app.send_message(int(uid), f"🎉 User {winner[-4:]} won the hourly Meth Lottery! +3000 ⭐")
+            except: continue
+    data["lottery"] = {"entries": [], "last_draw": now.isoformat()}
+    save()
+    threading.Timer(3600, run_lottery).start()
+
 run_lottery()
