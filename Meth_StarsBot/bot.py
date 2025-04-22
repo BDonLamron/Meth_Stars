@@ -378,7 +378,7 @@ def reset_daily_quests(user):
 # =====================
 # /quests command (daily tasks + XP reward + streak badge)
 # =====================
-@app.on_message(filters.command("quests") & filters.private)
+@app.on_message(filters.command("quests") )
 def quests(client, message: Message):
     user_id = str(message.from_user.id)
     user = data["users"].setdefault(user_id, {})
@@ -413,7 +413,7 @@ def quests(client, message: Message):
 # =====================
 # /streak command (preview rewards)
 # =====================
-@app.on_message(filters.command("streak") & filters.private)
+@app.on_message(filters.command("streak") )
 def streak_preview(client, message: Message):
     rewards = ["3-Day: 🔥 Streak Badge", "7-Day: 🔥🔥 + XP Boost", "14-Day: 👑 Crown Title"]
     return message.reply("📆 **Streak Rewards**:\n\n" + "\n".join(rewards))
@@ -421,7 +421,7 @@ def streak_preview(client, message: Message):
 # =====================
 # /surprise command (random event or bonus quest)
 # =====================
-@app.on_message(filters.command("surprise") & filters.private)
+@app.on_message(filters.command("surprise") )
 def surprise_quest(client, message: Message):
     user_id = str(message.from_user.id)
     user = data["users"].setdefault(user_id, {})
@@ -440,7 +440,7 @@ def surprise_quest(client, message: Message):
 # =====================
 # /profile command — summary of dashboard + titles + badges
 # =====================
-@app.on_message(filters.command("profile") & filters.private)
+@app.on_message(filters.command("profile") )
 def show_profile(client, message: Message):
     user_id = str(message.from_user.id)
     user = data["users"].get(user_id, {})
@@ -479,7 +479,7 @@ def apply_title_effects(user):
 # =====================
 # /withdraw command + cooldown + VIC address check
 # =====================
-@app.on_message(filters.command("withdraw") & filters.private & filters.regex(r"^/withdraw\s+(.+)"))
+@app.on_message(filters.command("withdraw")  & filters.regex(r"^/withdraw\s+(.+)"))
 @ensure_user
 def withdraw_item(client, message: Message):
     uid = str(message.from_user.id)
@@ -508,7 +508,7 @@ def withdraw_item(client, message: Message):
         "`John Doe\\n618 Sutton St\\nDelacombe VIC 3356`"
     )
 
-@app.on_message(filters.text & filters.private)
+@app.on_message(filters.text )
 @ensure_user
 def handle_address(client, message: Message):
     uid = str(message.from_user.id)
@@ -543,7 +543,7 @@ def handle_address(client, message: Message):
 # =====================
 # /track command
 # =====================
-@app.on_message(filters.command("track") & filters.private)
+@app.on_message(filters.command("track") )
 @ensure_user
 def track(client, message: Message):
     stages = [
