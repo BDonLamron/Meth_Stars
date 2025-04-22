@@ -71,6 +71,7 @@ def start(client, message: Message):
         }
     data["users"][uid]["last_active"] = datetime.now(timezone.utc).isoformat()
     save()
+    client.send_chat_action(message.chat.id, "typing")
     message.reply("💎 Welcome to MethStars!\nUse /buy 0.1g to begin.\nUse /lootbox for free gifts.")
 
 
@@ -88,13 +89,14 @@ def setup(client, message):
         BotCommand("mute", "Mute bot ads"),
         BotCommand("unmute", "Unmute ads"),
         BotCommand("withdraw", "Withdraw items from inventory"),
-        BotCommand("track", "Track your delivery"),
+        BotCommand("track", "🚚 Track your delivery"),
         BotCommand("quests", "View your daily quests"),
         BotCommand("streak", "Check your streak rewards"),
         BotCommand("surprise", "Random bonus drop"),
         BotCommand("profile", "Your profile dashboard")
     ]
     client.set_bot_commands(commands)
+    client.send_chat_action(message.chat.id, "typing")
     message.reply("✅ Menu setup complete.")
 
 @app.on_message(filters.command("balance"))
@@ -132,18 +134,18 @@ def buy(client, message: Message):
     uid = str(message.from_user.id)
     args = message.text.split()
     if len(args) < 2:
-        return message.reply("❌ Usage: /buy [amount]")
+        return message.reply("❌ ℹ️ Usage: /buy [amount]")
     amount = args[1]
     if amount not in prices:
-        return message.reply("❌ Invalid amount.")
+        return message.reply("❌ ❌ Invalid amount!.")
     if data["users"][uid]["stars"] < prices[amount]:
-        return message.reply("💀 Not enough Stars.")
+        return message.reply("💀 💀 Not enough ⭐️ Stars!.")
     data["users"][uid]["stars"] -= prices[amount]
     data["users"][uid]["total_spent"] += prices[amount]
     data["users"][uid]["xp"] += 1
     data["users"][uid]["last_active"] = datetime.now(timezone.utc).isoformat()
     save()
-    message.reply(f"✅ You bought {amount} of Meth for {prices[amount]} ⭐️")
+    message.reply(f"✅ 🧪 You bought {amount} of Meth for {prices[amount]} ⭐️")
 
 @app.on_message(filters.command("lootbox"))
 @ensure_user
@@ -198,13 +200,13 @@ def dice(client, message: Message):
         return message.reply("🎲 Usage: /dice [amount]")
     amt = int(args[1])
     if data["users"][uid]["stars"] < amt:
-        return message.reply("💀 Not enough Stars.")
+        return message.reply("💀 💀 Not enough ⭐️ Stars!.")
     if random.choice([True, False]):
         data["users"][uid]["stars"] += amt
-        result = f"✅ You won {amt} ⭐️!"
+        result = f"✅ 🎉 You won {amt} ⭐️!"
     else:
         data["users"][uid]["stars"] -= amt
-        result = f"❌ You lost {amt} ⭐️"
+        result = f"❌ 😢 You lost {amt} ⭐️"
     save()
     message.reply(result)
 
@@ -227,16 +229,16 @@ def slots(client, message: Message):
         return message.reply("🎰 Usage: /slots [amount]")
     amt = int(args[1])
     if data["users"][uid]["stars"] < amt:
-        return message.reply("💀 Not enough Stars.")
+        return message.reply("💀 💀 Not enough ⭐️ Stars!.")
     spin = [random.choice(["💎", "🍒", "🍋"]) for _ in range(3)]
     win = spin.count(spin[0]) == 3
     if win:
         winnings = amt * 3
         data["users"][uid]["stars"] += winnings
-        result = f"{''.join(spin)}\n🎉 You won {winnings} ⭐️!"
+        result = f"{''.join(spin)}\n🎉 🎉 You won {winnings} ⭐️!"
     else:
         data["users"][uid]["stars"] -= amt
-        result = f"{''.join(spin)}\nYou lost {amt} ⭐️"
+        result = f"{''.join(spin)}\n😢 You lost {amt} ⭐️"
     save()
     message.reply(result)
 
@@ -262,14 +264,14 @@ def coinflip(client, message: Message):
     if call not in ["heads", "tails"]:
         return message.reply("🪙 Choose heads or tails.")
     if data["users"][uid]["stars"] < amt:
-        return message.reply("💀 Not enough Stars.")
+        return message.reply("💀 💀 Not enough ⭐️ Stars!.")
     flip = random.choice(["heads", "tails"])
     if call == flip:
         data["users"][uid]["stars"] += amt
-        result = f"✅ It was {flip}. You won {amt} ⭐️!"
+        result = f"✅ It was {flip}. 🎉 You won {amt} ⭐️!"
     else:
         data["users"][uid]["stars"] -= amt
-        result = f"❌ It was {flip}. You lost {amt} ⭐️"
+        result = f"❌ It was {flip}. 😢 You lost {amt} ⭐️"
     save()
     message.reply(result)
 
@@ -405,7 +407,7 @@ def quests(client, message: Message):
         if user["streak"] in [3, 7, 14]:
             user.setdefault("badges", []).append(f"🔥 {user['streak']}-Day Streak")
         save()
-        return message.reply(f"✅ Daily Quests Complete! +100 XP\n🔥 Streak: {user['streak']} days")
+        return message.reply(f"✅ 🏁 Daily Quests Complete! +100 XP\n🔥 Streak: {user['streak']} days")
 
     save()
     return message.reply("📜 **Daily Quests**:\n\n" + "\n".join(lines))
@@ -488,7 +490,7 @@ def withdraw_item(client, message: Message):
     inventory = user.setdefault("inventory", {})
 
     if inventory.get(item, 0) <= 0:
-        return message.reply("❌ You don’t have that item in your inventory.")
+        return message.reply("❌ 🚫 You don’t have that item in your inventory.")
 
     now = datetime.now(timezone.utc)
     last_withdraw = user.get("last_withdraw_time")
@@ -554,3 +556,51 @@ def track(client, message: Message):
     ]
     stage = random.choice(stages)
     message.reply(f"🚨 Tracking Status: {stage}")
+
+
+
+def main_menu():
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton("🎁 Lootbox", callback_data="lootbox"),
+         InlineKeyboardButton("🛒 Buy Meth", callback_data="buy")],
+        [InlineKeyboardButton("🎲 Dice", callback_data="dice"),
+         InlineKeyboardButton("🎰 Slots", callback_data="slots")],
+        [InlineKeyboardButton("📦 Withdraw", callback_data="withdraw"),
+         InlineKeyboardButton("🚚 Track", callback_data="track")],
+        [InlineKeyboardButton("🧾 Profile", callback_data="profile"),
+         InlineKeyboardButton("📜 Quests", callback_data="quests")],
+        [InlineKeyboardButton("🎉 Surprise", callback_data="surprise"),
+         InlineKeyboardButton("📈 Balance", callback_data="balance")]
+    ])
+
+
+@app.on_callback_query()
+@ensure_user
+def handle_buttons(client, callback_query):
+    data = callback_query.data
+    message = callback_query.message
+    uid = str(callback_query.from_user.id)
+
+    client.send_chat_action(callback_query.message.chat.id, "typing")
+
+    if data == "lootbox":
+        client.send_message(message.chat.id, "/lootbox")
+    elif data == "buy":
+        client.send_message(message.chat.id, "🛒 Use /buy 0.1g or 0.5g")
+    elif data == "dice":
+        client.send_message(message.chat.id, "🎲 Use /dice [amount] to gamble.")
+    elif data == "slots":
+        client.send_message(message.chat.id, "🎰 Use /slots [amount] to spin.")
+    elif data == "withdraw":
+        client.send_message(message.chat.id, "📦 Use /withdraw [item] to deliver meth.")
+    elif data == "track":
+        client.send_message(message.chat.id, "/track")
+    elif data == "profile":
+        client.send_message(message.chat.id, "/profile")
+    elif data == "quests":
+        client.send_message(message.chat.id, "/quests")
+    elif data == "surprise":
+        client.send_message(message.chat.id, "/surprise")
+    elif data == "balance":
+        client.send_message(message.chat.id, "/balance")
+    callback_query.answer()
