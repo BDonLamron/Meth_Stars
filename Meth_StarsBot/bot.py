@@ -67,7 +67,7 @@ def show_menu(client, message: Message):
     client.send_message(message.chat.id, f"{animation}
 💊 *Welcome to MethStars* 💊
 Choose your vice below:
-{animation}", reply_markup=keyboard)
+{animation}", reply_markup=keyboard), reply_markup=keyboard)
 
 @app.on_callback_query()
 def handle_buttons(client, cb: CallbackQuery):
