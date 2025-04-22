@@ -62,8 +62,7 @@ def start(client, message: Message):
             'muted': False,
             'total_spent': 0,
             'last_loot': '',
-            'last_active': '',
-            'inventory': {'0.1g': 0, '0.5g': 0, '1g': 0, '2g': 0, '3.5g': 0}
+            'last_active': ''
         }
     uid = str(message.from_user.id)
     if uid not in data["users"]:
@@ -104,8 +103,7 @@ def balance(client, message: Message):
             'muted': False,
             'total_spent': 0,
             'last_loot': '',
-            'last_active': '',
-            'inventory': {'0.1g': 0, '0.5g': 0, '1g': 0, '2g': 0, '3.5g': 0}
+            'last_active': ''
         }
     uid = str(message.from_user.id)
     u = data["users"].get(uid, {})
@@ -124,8 +122,7 @@ def buy(client, message: Message):
             'muted': False,
             'total_spent': 0,
             'last_loot': '',
-            'last_active': '',
-            'inventory': {'0.1g': 0, '0.5g': 0, '1g': 0, '2g': 0, '3.5g': 0}
+            'last_active': ''
         }
     uid = str(message.from_user.id)
     args = message.text.split()
@@ -139,7 +136,6 @@ def buy(client, message: Message):
     data["users"][uid]["stars"] -= prices[amount]
     data["users"][uid]["total_spent"] += prices[amount]
     data["users"][uid]["xp"] += 1
-    data["users"][uid]["inventory"][amount] += 1
     data["users"][uid]["last_active"] = datetime.now(timezone.utc).isoformat()
     save()
     message.reply(f"✅ You bought {amount} of Meth for {prices[amount]} ⭐️")
@@ -155,8 +151,7 @@ def lootbox(client, message: Message):
             'muted': False,
             'total_spent': 0,
             'last_loot': '',
-            'last_active': '',
-            'inventory': {'0.1g': 0, '0.5g': 0, '1g': 0, '2g': 0, '3.5g': 0}
+            'last_active': ''
         }
     uid = str(message.from_user.id)
     if uid not in data['users']:
@@ -166,8 +161,7 @@ def lootbox(client, message: Message):
             'muted': False,
             'total_spent': 0,
             'last_loot': '',
-            'last_active': '',
-            'inventory': {'0.1g': 0, '0.5g': 0, '1g': 0, '2g': 0, '3.5g': 0}
+            'last_active': ''
         }
     user = data['users'][uid]
     now = datetime.now(timezone.utc)
@@ -176,7 +170,6 @@ def lootbox(client, message: Message):
     reward = random.choice(["0.1g", "0.5g", "1g"])
     user["stars"] += prices[reward]
     user["xp"] += 2
-    user["inventory"][reward] += 1
     user["last_loot"] = now.isoformat()
     save()
     message.reply(f"🎁 Lootbox drop: {reward} of Meth!\n+{prices[reward]} ⭐️ | +2 XP")
@@ -192,8 +185,7 @@ def dice(client, message: Message):
             'muted': False,
             'total_spent': 0,
             'last_loot': '',
-            'last_active': '',
-            'inventory': {'0.1g': 0, '0.5g': 0, '1g': 0, '2g': 0, '3.5g': 0}
+            'last_active': ''
         }
     uid = str(message.from_user.id)
     args = message.text.split()
@@ -222,8 +214,7 @@ def slots(client, message: Message):
             'muted': False,
             'total_spent': 0,
             'last_loot': '',
-            'last_active': '',
-            'inventory': {'0.1g': 0, '0.5g': 0, '1g': 0, '2g': 0, '3.5g': 0}
+            'last_active': ''
         }
     uid = str(message.from_user.id)
     args = message.text.split()
@@ -255,8 +246,7 @@ def coinflip(client, message: Message):
             'muted': False,
             'total_spent': 0,
             'last_loot': '',
-            'last_active': '',
-            'inventory': {'0.1g': 0, '0.5g': 0, '1g': 0, '2g': 0, '3.5g': 0}
+            'last_active': ''
         }
     uid = str(message.from_user.id)
     args = message.text.split()
@@ -298,8 +288,7 @@ def mute(client, message: Message):
             'muted': False,
             'total_spent': 0,
             'last_loot': '',
-            'last_active': '',
-            'inventory': {'0.1g': 0, '0.5g': 0, '1g': 0, '2g': 0, '3.5g': 0}
+            'last_active': ''
         }
     uid = str(message.from_user.id)
     data["users"][uid]["muted"] = True
@@ -317,8 +306,7 @@ def unmute(client, message: Message):
             'muted': False,
             'total_spent': 0,
             'last_loot': '',
-            'last_active': '',
-            'inventory': {'0.1g': 0, '0.5g': 0, '1g': 0, '2g': 0, '3.5g': 0}
+            'last_active': ''
         }
     uid = str(message.from_user.id)
     data["users"][uid]["muted"] = False
@@ -358,61 +346,126 @@ fake_activity()
 
 if __name__ == "__main__":
     app.run()
-@app.on_message(filters.command("inventory"))
-@ensure_user
-def inventory(client, message: Message):
-    uid = str(message.from_user.id)
-    inv = data["users"][uid].get("inventory", {})
-    if not inv or all(v == 0 for v in inv.values()):
-        return message.reply("📦 Your meth stash is empty. Use /buy or /lootbox to collect.")
-    lines = ["📦 Your Inventory:"]
-    for k, v in inv.items():
-        if v > 0:
-            lines.append(f"{k} Meth: {v}x")
-    message.reply("\n".join(lines))
 
-# Withdraw state storage
-withdraw_sessions = {}
+# TrapGPT Upgrades: Prestige, Shop, Badges, Rotating Deals, AI Dealer NPC, Quests, Titles, Quest Tracking, Quest XP, Title Effects, Quest Reset, Streak Badges, Title List, Streak Preview, Surprise Quests, Profile Page
 
-@app.on_message(filters.command("withdraw"))
-@ensure_user
-def withdraw(client, message: Message):
-    uid = str(message.from_user.id)
-    user_inv = data["users"][uid]["inventory"]
-    available = [k for k, v in user_inv.items() if v > 0]
-    if not available:
-        return message.reply("📦 You have no meth to withdraw.")
-    withdraw_sessions[uid] = {"step": 1}
-    message.reply("🏷️ Which package do you want to withdraw? (e.g. 1g, 0.5g)")
+from pyrogram import Client, filters
+from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
+from datetime import datetime, timedelta
+import json, os, random
 
-@app.on_message(filters.text & filters.private)
-@ensure_user
-def handle_withdraw_step(client, message: Message):
-    uid = str(message.from_user.id)
-    if uid not in withdraw_sessions:
-        return
+# Assuming you have a `data` dict already loaded from data.json
+# and a save() function to persist it
+def save():
+    with open("data.json", "w") as f:
+        json.dump(data, f)
 
-    step_data = withdraw_sessions[uid]
+# =====================
+# Quest Reset Tracking
+# =====================
+def reset_daily_quests(user):
+    today = str(datetime.utcnow().date())
+    if user.get("last_quest_reset") != today:
+        user["quest_progress"] = {"dice": 0, "lootbox": 0, "delivery": 0, "xp": 0}
+        user["last_quest_reset"] = today
+        user["streak"] = user.get("streak", 0)
 
-    if step_data["step"] == 1:
-        item = message.text.strip()
-        if item not in data["users"][uid]["inventory"] or data["users"][uid]["inventory"][item] == 0:
-            return message.reply("❌ Invalid item or not enough in inventory.")
-        withdraw_sessions[uid]["item"] = item
-        withdraw_sessions[uid]["step"] = 2
-        return message.reply("📫 Enter your full delivery address:\n\n📦 Example:\nJohn Doe\n618 Sutton St\nDelacombe VIC 3356")
+# =====================
+# /quests command (daily tasks + XP reward + streak badge)
+# =====================
+@app.on_message(filters.command("quests") & filters.private)
+def quests(client, message: Message):
+    user_id = str(message.from_user.id)
+    user = data["users"].setdefault(user_id, {})
+    reset_daily_quests(user)
+    user.setdefault("quest_progress", {"dice": 0, "lootbox": 0, "delivery": 0, "xp": 0})
 
-    elif step_data["step"] == 2:
-        address = message.text.strip()
-        item = withdraw_sessions[uid]["item"]
-        data["users"][uid]["inventory"][item] -= 1
-        log = data["users"][uid].setdefault("shipping_log", [])
-        log.append({
-            "item": item,
-            "address": address,
-            "timestamp": datetime.now(timezone.utc).isoformat()
-        })
+    progress = user["quest_progress"]
+    lines = [
+        f"🎯 Win 1 /dice game — {'✅' if progress['dice'] >= 1 else f'{progress['dice']}/1'}",
+        f"🎁 Open 1 lootbox — {'✅' if progress['lootbox'] >= 1 else f'{progress['lootbox']}/1'}",
+        f"🚚 Make 1 delivery — {'✅' if progress['delivery'] >= 1 else f'{progress['delivery']}/1'}",
+        f"📈 Gain 50 XP — {'✅' if progress['xp'] >= 50 else f'{progress['xp']}/50'}",
+    ]
+
+    if all([
+        progress['dice'] >= 1,
+        progress['lootbox'] >= 1,
+        progress['delivery'] >= 1,
+        progress['xp'] >= 50
+    ]):
+        progress.update({"dice": 0, "lootbox": 0, "delivery": 0, "xp": 0})
+        user["xp"] = user.get("xp", 0) + 100
+        user["streak"] += 1
+        if user["streak"] in [3, 7, 14]:
+            user.setdefault("badges", []).append(f"🔥 {user['streak']}-Day Streak")
         save()
-        del withdraw_sessions[uid]
-        return message.reply(f"✅ Your order for {item} has been scheduled for delivery to: {address}")
+        return message.reply(f"✅ Daily Quests Complete! +100 XP\n🔥 Streak: {user['streak']} days")
 
+    save()
+    return message.reply("📜 **Daily Quests**:\n\n" + "\n".join(lines))
+
+# =====================
+# /streak command (preview rewards)
+# =====================
+@app.on_message(filters.command("streak") & filters.private)
+def streak_preview(client, message: Message):
+    rewards = ["3-Day: 🔥 Streak Badge", "7-Day: 🔥🔥 + XP Boost", "14-Day: 👑 Crown Title"]
+    return message.reply("📆 **Streak Rewards**:\n\n" + "\n".join(rewards))
+
+# =====================
+# /surprise command (random event or bonus quest)
+# =====================
+@app.on_message(filters.command("surprise") & filters.private)
+def surprise_quest(client, message: Message):
+    user_id = str(message.from_user.id)
+    user = data["users"].setdefault(user_id, {})
+    bonus = random.choice([
+        "💥 Double XP for next /dice win!",
+        "🎲 Free lootbox granted!",
+        "💸 +250 Stars added to your stash!"
+    ])
+    if "Stars" in bonus:
+        user["stars"] = user.get("stars", 0) + 250
+    elif "lootbox" in bonus:
+        user.setdefault("inventory", {})["lootbox"] = user["inventory"].get("lootbox", 0) + 1
+    save()
+    return message.reply(f"🎉 Surprise Event:\n{bonus}")
+
+# =====================
+# /profile command — summary of dashboard + titles + badges
+# =====================
+@app.on_message(filters.command("profile") & filters.private)
+def show_profile(client, message: Message):
+    user_id = str(message.from_user.id)
+    user = data["users"].get(user_id, {})
+
+    stars = user.get("stars", 0)
+    xp = user.get("xp", 0)
+    streak = user.get("streak", 0)
+    title = user.get("title", "None")
+    badges = user.get("badges", [])
+
+    badge_list = ", ".join(badges[-5:]) or "None"
+
+    return message.reply(
+        f"🧾 **Your Profile**\n\n"
+        f"⭐ Stars: `{stars}`\n"
+        f"🌟 XP: `{xp}`\n"
+        f"🔥 Streak: `{streak}` days\n"
+        f"🎖️ Title: {title}\n"
+        f"🏅 Recent Badges: {badge_list}"
+    )
+
+# =====================
+# Title Effects Helper (can be used in game logic)
+# =====================
+def apply_title_effects(user):
+    title = user.get("title", "")
+    if "XP Boost" in title:
+        return {"xp_multiplier": 1.5}
+    elif "Streak" in title:
+        return {"xp_multiplier": 1.2}
+    elif "Crown" in title:
+        return {"xp_multiplier": 2.0}
+    return {"xp_multiplier": 1.0}
