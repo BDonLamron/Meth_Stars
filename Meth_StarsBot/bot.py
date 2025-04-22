@@ -67,6 +67,9 @@ def show_menu(client, message: Message):
     client.send_message(message.chat.id, f"{animation}
 💊 **Welcome to MethStars** 💊
 Choose your vice below:
+{animation}"
+💊 **Welcome to MethStars** 💊
+Choose your vice below:
 {animation}", reply_markup=keyboard)
 
 @app.on_callback_query()
@@ -147,11 +150,11 @@ def resolve_slots(client, message, amt):
         reward = amt * 3
         u["stars"] += reward
         result = f"{''.join(spin)}
-🎉 JACKPOT HIT! You gained {reward} ⭐"
+🎉 JACKPOT HIT!! You gained {reward} ⭐🔥"
     else:
         u["stars"] -= amt
         result = f"{''.join(spin)}
-💀 You lost {amt} ⭐ - better luck next spin!"
+💀 You lost {amt} ⭐ — Trap house ain't easy."
     save()
     client.send_message(message.chat.id, result)
 
